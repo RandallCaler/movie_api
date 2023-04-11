@@ -24,13 +24,51 @@ def get_movie(movie_id: str):
     """
 
     for movie in db.movies:
-        if movie["movie_id"] == id:
+        if movie["movie_id"] == movie_id:
             print("movie found")
 
-    json = None
+    row = None
+    for movie in db.movies:
+      if movie["movie_id"] == movie_id:
+        row=movie
 
-    if json is None:
-        raise HTTPException(status_code=404, detail="movie not found.")
+    if row is None:
+      raise HTTPException(status_code=404, detail="movie not found.")
+    
+    top_chars = []
+    for line in db.lines:
+        if line["movie_id"]==movie_id:
+            top_chars.append(line)
+
+    chars = []
+    for character in top_chars:
+        count = 1
+        if(character["character_id"] not in chars):
+            chars.append(character, count)
+        else:
+            chars.index(character["character_id"])[1]+=1
+
+    chars.sort(key=[1])
+
+    charac_list = chars
+    for charac in row["top_characters"]:
+      "character_id" : charac["character_id"]
+      "character" : charac["character"]
+      "num_lines" : charac["num_lines"]
+      charac_list.append(charac)
+
+    # charac_json = {
+    #   charac_list
+    # }
+
+    json = {
+        "movie_id" : row["movie_id"],
+        "title" : row["title"],
+        "top_characters" : charac_list
+    }
+
+    # if json is None:
+    #     raise HTTPException(status_code=404, detail="movie not found.")
 
     return json
 
@@ -71,6 +109,24 @@ def list_movies(
     maximum number of results to return. The `offset` query parameter specifies the
     number of results to skip before returning results.
     """
-    json = None
+    movieList = []
+    if(name is ""):
+      for movie in db.movies:
+        movieList.append(movie)
+    else:
+      for movie in db.movies:
+        if movie["movie_title"] == name:
+          movieList.append(movie)
+
+    if(sort is "movie_title"):
+      movieList.sort(movie["movie_title"])
+    if(sort is "year"):
+      movieList.sort(movie["year"])
+    if(sort is "rating"):
+      movieList.sort(movie["imdb_rating"])
+
+    json = {
+        movieList[offset, limit]
+    }
 
     return json

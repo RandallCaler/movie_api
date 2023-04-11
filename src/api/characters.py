@@ -30,10 +30,47 @@ def get_character(id: str):
         if character["character_id"] == id:
             print("character found")
 
-    json = None
+    #for 
+     #top_conversations.append(conversation)
 
-    if json is None:
-        raise HTTPException(status_code=404, detail="movie not found.")
+    row = None
+    for character in db.characters:
+      if character["character_id"] == id:
+        row=character
+
+    if row is None:
+      raise HTTPException(status_code=404, detail="movie not found.")
+      
+    top_convos = []
+    for dialogue in db.conversations:
+      if(dialogue["character1_id"]==id or dialogue["character2_id"]==id):
+        top_convos.append(dialogue)
+
+    line_list = []  
+    for conversation in top_convos:
+      count = 0
+      for line in db.lines:
+        if(line["conversation_id"]==conversation["conversation_id"]):
+          count+=1
+      line_list.append(conversation, count)
+    line_list.sort(key=[1])
+
+    convo_list = []
+    for convo in line_list:
+      "character_id" : convo["character_id"]
+      "character" : convo["character"]
+      "gender" : convo["gender"]
+      "number_of_lines_together" : convo["number_of_lines_together"]
+      convo_list.append(convo)
+      
+
+    json = {
+      "character_id" : row["character_id"],
+      "character" : row["character"],
+      "movie" : row["movie"],
+      "gender" : row["gender"],
+      "top_conversations" : convo_list
+    }
 
     return json
 
@@ -73,5 +110,23 @@ def list_characters(
     number of results to skip before returning results.
     """
 
-    json = None
+    characterList = []
+    if(name is ""):
+      for character in db.characters:
+        characterList.append(character)
+    else:
+      for character in db.characters:
+        if character["character"] == name:
+          characterList.append(character)
+
+    if(sort is "character"):
+      characterList.sort(character["character"])
+    if(sort is "movie"):
+      characterList.sort(character["movie"])
+    if(sort is "number_of_lines"):
+      characterList.sort(character["number_of_lines"])
+
+    json = {
+      characterList[offset, limit]
+    }
     return json
