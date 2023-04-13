@@ -29,3 +29,5 @@ with open("lines.csv", mode="r", encoding="utf8") as csv_file:
         {k: v for k, v in row.items()}
         for row in csv.DictReader(csv_file, skipinitialspace=True)
     ]
+    # for line in lines:
+    #     characters[line.character_id].num_lines+=1

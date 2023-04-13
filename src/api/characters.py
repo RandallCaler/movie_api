@@ -57,11 +57,13 @@ def get_character(id: str):
 
     convo_list = []
     for convo in line_list:
-      "character_id" : convo["character_id"]
-      "character" : convo["character"]
-      "gender" : convo["gender"]
-      "number_of_lines_together" : convo["number_of_lines_together"]
-      convo_list.append(convo)
+      convo_json = {
+        "character_id" : convo["character_id"],
+        "character" : convo["character"],
+        "gender" : convo["gender"],
+        "number_of_lines_together" : convo["number_of_lines_together"]
+      }
+      convo_list.append(convo_json)
       
 
     json = {
@@ -116,17 +118,26 @@ def list_characters(
         characterList.append(character)
     else:
       for character in db.characters:
-        if character["character"] == name:
+        if character["name"] == name:
           characterList.append(character)
 
-    if(sort is "character"):
-      characterList.sort(character["character"])
-    if(sort is "movie"):
-      characterList.sort(character["movie"])
-    if(sort is "number_of_lines"):
-      characterList.sort(character["number_of_lines"])
+    if sort == character_sort_options.movie_title:
+      characterList.sort(key=lambda c: (c["name"]))
+    elif sort == character_sort_options.year:
+      characterList.sort(key=lambda c: (c["movie_id"]))
+    elif sort == character_sort_options.rating:
+      characterList.sort(key=lambda c: (c["number_of_lines"]))
+      characterList.reverse()
+    else:
+       raise AssertionError("not sorted")
 
     json = {
-      characterList[offset, limit]
+      {
+        "character_id": int(m["character_id"]),
+        "character": m["name"],
+        "movie" : m["movie_id"],
+        "number_of_lines" : float(m["number_of_lines"]),
+       }
+       for m in characterList[offset : offset + limit]
     }
     return json

@@ -52,10 +52,12 @@ def get_movie(movie_id: str):
 
     charac_list = chars
     for charac in row["top_characters"]:
-      "character_id" : charac["character_id"]
-      "character" : charac["character"]
-      "num_lines" : charac["num_lines"]
-      charac_list.append(charac)
+      movie_json = {
+        "character_id" : charac["character_id"],
+        "character" : charac["character"],
+        "num_lines" : charac["num_lines"]
+      }
+      charac_list.append(movie_json)
 
     # charac_json = {
     #   charac_list
@@ -115,18 +117,28 @@ def list_movies(
         movieList.append(movie)
     else:
       for movie in db.movies:
-        if movie["movie_title"] == name:
+        if name in movie["title"]:
           movieList.append(movie)
 
-    if(sort is "movie_title"):
-      movieList.sort(movie["movie_title"])
-    if(sort is "year"):
-      movieList.sort(movie["year"])
-    if(sort is "rating"):
-      movieList.sort(movie["imdb_rating"])
+    if sort == movie_sort_options.movie_title:
+      movieList.sort(key=lambda c: (c["title"]))
+    elif sort == movie_sort_options.year:
+      movieList.sort(key=lambda c: (c["year"]))
+    elif sort == movie_sort_options.rating:
+      movieList.sort(key=lambda c: (c["imdb_rating"]))
+      movieList.reverse()
+    else:
+       raise AssertionError("not sorted")
 
-    json = {
-        movieList[offset, limit]
-    }
+    json = (
+       {
+        "movie_id": int(m["movie_id"]),
+        "movie_title": m["title"],
+        "year" : m["year"],
+        "imdb_rating" : float(m["imdb_rating"]),
+        "imdb_votes" : int(m["imdb_votes"])
+       }
+       for m in movieList[offset : offset + limit]
+    )
 
     return json
