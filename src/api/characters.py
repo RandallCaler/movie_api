@@ -121,11 +121,11 @@ def list_characters(
         if character["name"] == name:
           characterList.append(character)
 
-    if sort == character_sort_options.movie_title:
+    if sort == character_sort_options.character:
       characterList.sort(key=lambda c: (c["name"]))
-    elif sort == character_sort_options.year:
-      characterList.sort(key=lambda c: (c["movie_id"]))
-    elif sort == character_sort_options.rating:
+    elif sort == character_sort_options.movie:
+      characterList.sort(key=lambda c: (c["title"]))
+    elif sort == character_sort_options.number_of_lines:
       characterList.sort(key=lambda c: (c["number_of_lines"]))
       characterList.reverse()
     else:
