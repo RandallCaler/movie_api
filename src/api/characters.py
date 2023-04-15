@@ -38,7 +38,6 @@ def get_character(id: int):
     * `top_conversations`: A list of characters that the character has the most
       conversations with. The characters are listed in order of the number of
       lines together. These conversations are described below.
-
     Each conversation is represented by a dictionary with the following keys:
     * `character_id`: the internal id of the character.
     * `character`: The name of the character.
@@ -47,12 +46,28 @@ def get_character(id: int):
       originally queried character.
     """
 
-    json = None
+    character = db.characters.get(id)
 
-    if json is None:
-        raise HTTPException(status_code=404, detail="movie not found.")
+    if character:
+        movie = db.movies.get(character.movie_id)
+        result = {
+            "character_id": character.id,
+            "character": character.name,
+            "movie": movie and movie.title,
+            "gender": character.gender,
+            "top_conversations": (
+                {
+                    "character_id": other_id,
+                    "character": db.characters[other_id].name,
+                    "gender": db.characters[other_id].gender,
+                    "number_of_lines_together": lines,
+                }
+                for other_id, lines in get_top_conv_characters(character)
+            ),
+        }
+        return result
 
-    return json
+    raise HTTPException(status_code=404, detail="character not found.")
 
 
 class character_sort_options(str, Enum):
@@ -75,20 +90,47 @@ def list_characters(
     * `character`: The name of the character.
     * `movie`: The movie the character is from.
     * `number_of_lines`: The number of lines the character has in the movie.
-
     You can filter for characters whose name contains a string by using the
     `name` query parameter.
-
     You can also sort the results by using the `sort` query parameter:
     * `character` - Sort by character name alphabetically.
     * `movie` - Sort by movie title alphabetically.
     * `number_of_lines` - Sort by number of lines, highest to lowest.
-
     The `limit` and `offset` query
     parameters are used for pagination. The `limit` query parameter specifies the
     maximum number of results to return. The `offset` query parameter specifies the
     number of results to skip before returning results.
     """
 
-    json = None
+    if name:
+
+        def filter_fn(c):
+            return c.name and name.upper() in c.name
+
+    else:
+
+        def filter_fn(_):
+            return True
+
+    items = list(filter(filter_fn, db.characters.values()))
+
+    def none_last(x, reverse=False):
+        return (x is None) ^ reverse, x
+
+    if sort == character_sort_options.character:
+        items.sort(key=lambda c: none_last(c.name))
+    elif sort == character_sort_options.movie:
+        items.sort(key=lambda c: none_last(db.movies[c.movie_id].title))
+    elif sort == character_sort_options.number_of_lines:
+        items.sort(key=lambda c: none_last(c.num_lines, True), reverse=True)
+
+    json = (
+        {
+            "character_id": c.id,
+            "character": c.name,
+            "movie": db.movies[c.movie_id].title,
+            "number_of_lines": c.num_lines,
+        }
+        for c in items[offset : offset + limit]
+    )
     return json
