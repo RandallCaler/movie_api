@@ -145,6 +145,7 @@ def list_lines(
             "line_id": l.id,
             "character": db.characters[l.c_id].name,
             "movie": db.movies[l.movie_id].title,
+            "text": l.line_text,
         }
         for l in items[offset : offset + limit]
     )
