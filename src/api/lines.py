@@ -40,7 +40,7 @@ def get_line(id: int):
     line = db.lines.get(id)
 
     if line:
-        character = db.characters.get(line.character_id)
+        character = db.characters.get(line.c_id)
         movie = db.movies.get(line.movie_id)
         result = {
             "line_id": line.id,
@@ -61,7 +61,7 @@ def get_line(id: int):
     raise HTTPException(status_code=404, detail="line not found.")
 
 
-@router.get("/conversations/{id}", tags=["conversations"])
+@router.get("/lines/conversations/{id}", tags=["conversations"])
 def get_conversation(id:int):
     """
     This endpoint returns a single line by its identifier. For each line
@@ -128,22 +128,22 @@ def list_lines(
         def filter_fn(_):
             return True
 
-    items = list(filter(filter_fn, db.characters.values()))
+    items = list(filter(filter_fn, db.lines.values()))
 
     def none_last(x, reverse=False):
         return (x is None) ^ reverse, x
 
     if sort == line_sort_options.character:
-        items.sort(key=lambda l: none_last(db.characters[l.character_id].name))
+        items.sort(key=lambda l: none_last(db.characters[l.c_id].name))
     elif sort == line_sort_options.movie:
         items.sort(key=lambda l: none_last(db.movies[l.movie_id].title))
     elif sort == line_sort_options.conversation:
-        items.sort(key=lambda l: none_last(db.conversations[l.conversation_id].conversation_id))
+        items.sort(key=lambda l: none_last(db.conversations[l.conv_id].conversation_id))
 
     json = (
         {
             "line_id": l.id,
-            "character": db.characters[l.character_id].name,
+            "character": db.characters[l.c_id].name,
             "movie": db.movies[l.movie_id].title,
         }
         for l in items[offset : offset + limit]

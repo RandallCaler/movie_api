@@ -29,7 +29,6 @@ def test_lines():
     with open("test/lines/root.json", encoding="utf-8") as f:
         assert response.json() == json.load(f)
 
-# New test case (includes multiple conversation partners)
 def test_get_line2():
     response = client.get("/lines/49")
     assert response.status_code == 200
