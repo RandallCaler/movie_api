@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from src import database as db
 from pydantic import BaseModel
 from typing import List
@@ -38,9 +38,29 @@ def add_conversation(movie_id: int, conversation: ConversationJson):
     The endpoint returns the id of the resulting conversation that was created.
     """
 
+    movie = db.conversations.get(movie_id)
+    count=1
+    if movie:
+        char1=db.characters.get(conversation.character_1_id)
+        char2=db.characters.get(conversation.character_2_id)
+        #lines=conversation.lines
+        if char1==char2:
+            raise HTTPException(status_code=422, detail="characters are the same.")
+        elif db.characters.get(char1.movie_id)!=movie_id:
+            raise HTTPException(status_code=422, detail="character1 does not exist.")
+        elif db.characters.get(char2.movie_id)!=movie_id:
+            raise HTTPException(status_code=422, detail="character2 does not exist.")
+        else:
+            #if line.character_id==char1.character_id or line.character_id==char2.character_id:
+            db.lines.get(movie_id).line_sort=count
+            count+=1
+            db.logs.append({"conversation_id": conversation_id.now(), "movie_id_added_to": movie_id})
+            db.upload_new_log()
+        
+
     # TODO: Remove the following two lines. This is just a placeholder to show
     # how you could implement persistent storage.
 
-    print(conversation)
-    db.logs.append({"post_call_time": datetime.now(), "movie_id_added_to": movie_id})
-    db.upload_new_log()
+    # print(conversation)
+    # db.logs.append({"post_call_time": datetime.now(), "movie_id_added_to": movie_id})
+    # db.upload_new_log()

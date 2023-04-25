@@ -22,6 +22,36 @@ sess = supabase.auth.get_session()
 # TODO: Below is purely an example of reading and then writing a csv from supabase.
 # You should delete this code for your working example.
 
+lines_csv = (
+    supabase.storage.from_("movie-api")
+    .download("movie_conversations_log.csv")
+    .decode("utf-8")
+)
+
+lines = []
+for row in csv.DictReader(io.StringIO(lines_csv), skipinitialspace=True):
+    lines.append(row)
+
+characters_csv = (
+    supabase.storage.from_("movie-api")
+    .download("movie_conversations_log.csv")
+    .decode("utf-8")
+)
+
+characters = []
+for row in csv.DictReader(io.StringIO(characters_csv), skipinitialspace=True):
+    characters.append(row)
+
+conversations_csv = (
+    supabase.storage.from_("movie-api")
+    .download("movie_conversations_log.csv")
+    .decode("utf-8")
+)
+
+conversations = []
+for row in csv.DictReader(io.StringIO(conversations_csv), skipinitialspace=True):
+    conversations.append(row)
+
 # START PLACEHOLDER CODE
 
 # Reading in the log file from the supabase bucket
