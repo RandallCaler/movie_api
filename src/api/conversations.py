@@ -38,7 +38,7 @@ def add_conversation(movie_id: int, conversation: ConversationJson):
     The endpoint returns the id of the resulting conversation that was created.
     """
 
-    movie = db.conversations.get(movie_id)
+    movie = db.movies.get(movie_id)
     count=1
     if movie:
         char1=db.characters.get(conversation.character_1_id)
@@ -53,9 +53,14 @@ def add_conversation(movie_id: int, conversation: ConversationJson):
         else:
             #if line.character_id==char1.character_id or line.character_id==char2.character_id:
             db.lines.get(movie_id).line_sort=count
-            count+=1
-            db.logs.append({"conversation_id": conversation_id.now(), "movie_id_added_to": movie_id})
-            db.upload_new_log()
+            db.last_convo_id+=1
+            db.conversations.append({"conversation_id": db.last_convo_id, "movie_id": movie_id, "character1_id":conversation.character_1_id, "character2_id":conversation.character_2_id})
+            db.upload_new_log(["conversation_id","character1_id","character2_id","movie_id"], db.conversations, "conversations.csv")
+            for line in conversation.lines:
+                db.last_line_id+=1
+                db.lines.append({"character_id":line.character_id, "line_text":line.line_text, "line_id":db.last_line_id, "conversation_id":db.last_convo_id, "line_sort":count})
+                count+=1
+            db.upload_new_log(["line_id","character_id","movie_id","conversation_id","line_sort","line_text"], db.lines, "lines.csv")
         
 
     # TODO: Remove the following two lines. This is just a placeholder to show
