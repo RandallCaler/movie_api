@@ -5,6 +5,7 @@ import io
 from supabase import Client, create_client
 import dotenv
 
+
 # DO NOT CHANGE THIS TO BE HARDCODED. ONLY PULL FROM ENVIRONMENT VARIABLES.
 dotenv.load_dotenv()
 supabase_api_key = os.environ.get("SUPABASE_API_KEY")
