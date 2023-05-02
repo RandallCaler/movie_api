@@ -5,6 +5,12 @@ from collections import Counter
 from fastapi.params import Query
 from src import database as db
 
+from sqlalchemy import create_engine
+import os
+import dotenv
+import sqlalchemy
+import dotenv
+
 router = APIRouter()
 
 
@@ -37,28 +43,55 @@ def get_line(id: int):
     * `text`: The gender of the character.
     """
 
-    line = db.lines.get(id)
+    stmt = (
+        sqlalchemy.select(
+            db.lines.c.line_id,
+            db.characters.c.name,
+            db.movies.c.title,
+            db.lines.c.line_text,
+        )
+        .join(db.lines, db.lines.c.line_id==id)
+        .join(db.movies)
+        .join(db.characters)
+        .group_by(db.lines.c.line_id)
+    )
 
-    if line:
-        character = db.characters.get(line.c_id)
-        movie = db.movies.get(line.movie_id)
-        result = {
-            "line_id": line.id,
-            "character": character.name,
-            "movie": movie and movie.title,
-            "text": line.line_text,
-            # "longest_conversations": (
-            #     {
-            #         "conversation_id": db.conversations[other_id].conversation_id,
-            #         "movie": db.movies[other_id].title,
-            #         "lines": lines,
-            #     }
-            #     for other_id, lines in get_longest_conv(line)
-            # ),
-        }
-        return result
+    with db.engine.connect() as conn:
+        result = conn.execute(stmt)
+        json = []
+        for row in result:
+            json.append(
+                {
+                    "line_id": row.line_id,
+                    "character": row.name,
+                    "movie": row.title,
+                }
+            )
 
-    raise HTTPException(status_code=404, detail="line not found.")
+    return json
+
+    # line = db.lines.get(id)
+
+    # if line:
+    #     character = db.characters.get(line.c_id)
+    #     movie = db.movies.get(line.movie_id)
+    #     result = {
+    #         "line_id": line.id,
+    #         "character": character.name,
+    #         "movie": movie and movie.title,
+    #         "text": line.line_text,
+    #         # "longest_conversations": (
+    #         #     {
+    #         #         "conversation_id": db.conversations[other_id].conversation_id,
+    #         #         "movie": db.movies[other_id].title,
+    #         #         "lines": lines,
+    #         #     }
+    #         #     for other_id, lines in get_longest_conv(line)
+    #         # ),
+    #     }
+    #     return result
+
+    # raise HTTPException(status_code=404, detail="line not found.")
 
 
 @router.get("/lines/conversations/{id}", tags=["conversations"])
@@ -118,35 +151,77 @@ def list_lines(
     number of results to skip before returning results.
     """
 
-    if name:
-
-        def filter_fn(l):
-            return l.name and name.upper() in l.name
-
+    if sort is line_sort_options.character:
+        order_by = db.characters.c.name
+    elif sort is line_sort_options.movie:
+        order_by = db.movies.c.title
+    elif sort is line_sort_options.conversation:
+        order_by = sqlalchemy.desc(db.conversations.c.conversation_id)
     else:
+        assert False
 
-        def filter_fn(_):
-            return True
-
-    items = list(filter(filter_fn, db.lines.values()))
-
-    def none_last(x, reverse=False):
-        return (x is None) ^ reverse, x
-
-    if sort == line_sort_options.character:
-        items.sort(key=lambda l: none_last(db.characters[l.c_id].name))
-    elif sort == line_sort_options.movie:
-        items.sort(key=lambda l: none_last(db.movies[l.movie_id].title))
-    elif sort == line_sort_options.conversation:
-        items.sort(key=lambda l: none_last(db.conversations[l.conv_id].conversation_id))
-
-    json = (
-        {
-            "line_id": l.id,
-            "character": db.characters[l.c_id].name,
-            "movie": db.movies[l.movie_id].title,
-            "text": l.line_text,
-        }
-        for l in items[offset : offset + limit]
+    stmt = (
+        sqlalchemy.select(
+            db.lines.c.line_id,
+            db.characters.c.name,
+            db.movies.c.title,
+        )
+        .join(db.characters, db.characters.c.character_id==db.lines.c.character_id)
+        .join(db.movies, db.movies.c.movie_id==db.lines.c.movie_id)
+        .join(db.conversations, db.conversations.c.conversation_id==db.lines.c.conversation_id)
+        .group_by(db.lines.c.line_id, db.characters.c.name, db.movies.c.title)
+        .limit(limit)
+        .offset(offset)
+        .order_by(order_by, db.lines.c.line_id)
     )
+
+    # filter only if name parameter is passed
+    if name != "":
+        stmt = stmt.where(db.lines.c.line_id.ilike(f"%{name}%"))
+
+    with db.engine.connect() as conn:
+        result = conn.execute(stmt)
+        json = []
+        for row in result:
+            json.append(
+                {
+                    "line_id": row.line_id,
+                    "character": row.name,
+                    "movie": row.title,
+                }
+            )
+
     return json
+
+    # if name:
+
+    #     def filter_fn(l):
+    #         return l.name and name.upper() in l.name
+
+    # else:
+
+    #     def filter_fn(_):
+    #         return True
+
+    # items = list(filter(filter_fn, db.lines.values()))
+
+    # def none_last(x, reverse=False):
+    #     return (x is None) ^ reverse, x
+
+    # if sort == line_sort_options.character:
+    #     items.sort(key=lambda l: none_last(db.characters[l.c_id].name))
+    # elif sort == line_sort_options.movie:
+    #     items.sort(key=lambda l: none_last(db.movies[l.movie_id].title))
+    # elif sort == line_sort_options.conversation:
+    #     items.sort(key=lambda l: none_last(db.conversations[l.conv_id].conversation_id))
+
+    # json = (
+    #     {
+    #         "line_id": l.id,
+    #         "character": db.characters[l.c_id].name,
+    #         "movie": db.movies[l.movie_id].title,
+    #         "text": l.line_text,
+    #     }
+    #     for l in items[offset : offset + limit]
+    # )
+    # return json
