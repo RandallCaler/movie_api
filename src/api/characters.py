@@ -59,7 +59,8 @@ def get_character(id: int):
             db.characters.c.gender,
         )
         # .select(db.characters.c.character_id, count, num_lines)
-        .join(db.characters, db.lines.c.character_id==id)
+        .select_from(db.characters)
+        .where(db.characters.c.character_id==id)
         .join(db.movies)
         .join(db.lines)
         .group_by(db.characters.c.character_id, db.characters.c.name, db.movies.c.title)

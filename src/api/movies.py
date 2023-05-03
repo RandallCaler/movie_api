@@ -31,10 +31,13 @@ def get_movie(movie_id: int):
         sqlalchemy.select(
             db.movies.c.movie_id,
             db.movies.c.title,
+            db.characters.c.name,
         )
         #.order_by(order_by, db.movies.c.movie_id)
-        .join(db.movies, db.movies.c.movie_id==movie_id)
-        .group_by(db.movies.c.title)
+        .select_from(db.movies)
+        .join(db.characters)
+        .join(db.lines)
+        .where(db.movies.c.movie_id==movie_id)
     )
 
     with db.engine.connect() as conn:
@@ -45,10 +48,13 @@ def get_movie(movie_id: int):
                 {
                     "movie_id": row.movie_id,
                     "movie_title": row.title,
+                    "name": row.name,
                 }
             )
 
     return json
+
+#raise HTTPException(status_code=404, detail="movie not found.")
 
     # movie = db.movies.get(movie_id)
     # if movie:

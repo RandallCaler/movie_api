@@ -50,10 +50,10 @@ def get_line(id: int):
             db.movies.c.title,
             db.lines.c.line_text,
         )
-        .join(db.lines, db.lines.c.line_id==id)
+        .select_from(db.lines)
+        .where(db.lines.c.line_id==id)
         .join(db.movies)
         .join(db.characters)
-        .group_by(db.lines.c.line_id)
     )
 
     with db.engine.connect() as conn:
